@@ -24,15 +24,40 @@ def tostring(x):
 
 class RemovePipeline:
 
+    def open_spider(self, spider):
+        self.conn = sqlite3.connect(jiandan.settings.DATABASE_PATH)
+        cursor = self.conn.cursor()
+        cursor.execute(
+            '''select count(*) from sqlite_master where type='table' and name='data' ''')
+        if cursor.fetchone()[0] == 0:
+            cursor.execute('''
+CREATE TABLE `data` (
+    `id`    INTEGER NOT NULL UNIQUE,
+    `author`    TEXT NOT NULL,
+    `content`   TEXT NOT NULL,
+    PRIMARY KEY(id)
+)''')
+        cursor.close()
+        self.conn.commit()
+
+    def close_spider(self, spider):
+        self.conn.close()
+
     def process_item(self, item, spider):
         item['id'] = tostring(item['id'])
         item['author'] = tostring(item['author'])
         if item['id'] == '' or item['author'] == '':
             raise DropItem('id or author is empty!')
         try:
-            int(item['id'])
+            cursor = self.conn.cursor()
+            cursor.execute(
+                'SELECT count(*) FROM `data` WHERE `id`=?', (int(item['id']),))
+            if cursor.fetchone()[0] != 0:
+                raise DropItem('item already exist!')
         except ValueError:
             raise DropItem('id cannot convert to int!')
+        finally:
+            cursor.close()
         return item
 
 
@@ -56,15 +81,23 @@ class PicImagesPipeline(ImagesPipeline):
 class StorePipeline:
 
     def open_spider(self, spider):
-        self.nodes = []
+        self.conn = sqlite3.connect(jiandan.settings.DATABASE_PATH)
+        cursor = self.conn.cursor()
+        cursor.execute(
+            '''select count(*) from sqlite_master where type='table' and name='data' ''')
+        if cursor.fetchone()[0] == 0:
+            cursor.execute('''
+CREATE TABLE `data` (
+    `id`    INTEGER NOT NULL UNIQUE,
+    `author`    TEXT NOT NULL,
+    `content`   TEXT NOT NULL,
+    PRIMARY KEY(id)
+)''')
+        cursor.close()
+        self.conn.commit()
 
     def close_spider(self, spider):
-        hr = etree.Element('hr')
-        hr = etree.tostring(hr, encoding='utf-8', pretty_print=True)
-        with open(jiandan.settings.STORE_PATH + 'data.html', 'ab') as f:
-            for node in self.nodes:
-                f.write(node)
-                f.write(hr)
+        self.conn.close()
 
     def process_item(self, item, spider):
         root = etree.Element('div')
@@ -91,5 +124,10 @@ class StorePipeline:
                 last_node = etree.SubElement(root, 'br')
         item['content'] = etree.tostring(
             root, encoding='utf-8', pretty_print=True)
-        self.nodes.append(item['content'])
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'INSERT INTO `data`(`id`,`author`,`content`) VALUES (?,?,?)',
+            (item['id'], item['author'], item['content']))
+        cursor.close()
+        self.conn.commit()
         return item

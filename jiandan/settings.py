@@ -93,5 +93,5 @@ HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-STORE_PATH = 'downloads/'
-IMAGES_STORE = STORE_PATH + 'image/'
+DATABASE_PATH = 'downloads/data.db'
+IMAGES_STORE = 'downloads/image/'
