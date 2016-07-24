@@ -87,8 +87,6 @@ CREATE TABLE `viewed-pages` (
             cursor.execute(
                 '''SELECT * FROM `viewed-pages` WHERE `page` = ?''', (index,))
             if cursor.fetchone() is not None:
-                cursor.execute(
-                    'INSERT INTO `viewed-pages`(`page`) VALUES (?);', (index,))
                 return True
             return False
         finally:

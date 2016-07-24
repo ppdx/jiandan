@@ -95,3 +95,5 @@ HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 DATABASE_PATH = 'downloads/data.db'
 IMAGES_STORE = 'downloads/image/'
+
+LOG_FILE = 'downloads/pic.log'
