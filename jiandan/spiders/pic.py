@@ -9,9 +9,6 @@ from jiandan.items import *
 class PicSpider(scrapy.Spider):
     name = "pic"
     allowed_domains = ["jandan.net"]
-    start_urls = (
-        'http://jandan.net/pic',
-    )
 
     def __init__(self, start=None, length=None, *args, **kwargs):
         super(PicSpider, self).__init__(*args, **kwargs)
@@ -27,11 +24,24 @@ CREATE TABLE `viewed-pages` (
 )''')
         cursor.close()
         self.conn.commit()
-        if start is not None:
-            start_urls = ('http://jandan.net/pic/page-' + start,)
+        if start is None:
+            self.start_urls = ['http://jandan.net/pic']
+        else:
+            self.start_urls = ['http://jandan.net/pic/page-' + start]
+        # self.start = start
         self.length = int(length) if length is not None else -1
 
+    # def start_requests(self):
+    #     if self.start is None:
+    #         return [scrapy.Request('http://jandan.net/pic', self.parse)]
+    #     else:
+    # return [scrapy.Request('http://jandan.net/pic/page-' + start,
+    # self.parse)]
+
     def parse(self, response):
+        self.view_page(response.url)
+        print(self.length, response.url)
+        self.length -= 1
         for sel in response.xpath('//li[starts-with(@id, "comment-")]'):
             commentItem = CommentItem()
             commentItem['id'] = sel.css('.righttext > a::text').extract()
@@ -58,7 +68,7 @@ CREATE TABLE `viewed-pages` (
                             url=node.attrib['href'], text=node.text)
                 elif tag == 'img':
                     item = ImageItem(
-                        uri=node.attrib['href'], alt=node.attrib.get('alt') or '')
+                        uri=node.attrib['src'], alt=node.attrib.get('alt') or '')
                 else:
                     item = TextItem(text=node.text)
                 content.append(item)
@@ -69,12 +79,9 @@ CREATE TABLE `viewed-pages` (
 
         next_url = response.css(
             '.previous-comment-page').xpath('@href').extract()[0]
-        if self.length > 1:
-            self.length -= 1
-            self.view_page(next_url)
+        if self.length > 0:
             yield scrapy.Request(next_url, self.parse)
         elif self.length < 0 and not self.has_crawled(next_url):
-            self.view_page(next_url)
             yield scrapy.Request(next_url, self.parse)
 
     def has_crawled(self, page):
@@ -86,9 +93,7 @@ CREATE TABLE `viewed-pages` (
             cursor = self.conn.cursor()
             cursor.execute(
                 '''SELECT * FROM `viewed-pages` WHERE `page` = ?''', (index,))
-            if cursor.fetchone() is not None:
-                return True
-            return False
+            return cursor.fetchone() is not None
         finally:
             cursor.close()
 
