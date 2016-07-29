@@ -8,6 +8,7 @@
 #     http://doc.scrapy.org/en/latest/topics/settings.html
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
+from time import gmtime, strftime
 
 BOT_NAME = 'jiandan'
 
@@ -41,15 +42,8 @@ ROBOTSTXT_OBEY = True
 
 # Override the default request headers:
 DEFAULT_REQUEST_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Encoding": "gzip, deflate, sdch",
     "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2",
-    "Connection": "keep-alive",
-    "Cookie": "1640318815=1eabuVvbYZ7dmgpnQJAWIzqH2o034uJMcXLedQILOw; gif-click-load=off; 1640318815=adbegVrUpejPYu9P4XlGtQEt%2Bf1YEoxNpWkBfCpU9w; jdna=596e6fb28c1bb47f949e65e1ae03f7f5#1469445417680",
     "DNT": "1",
-    "Host": "jandan.net",
-    "Pragma": "no-cache",
-    "Referer": "http://jandan.net/pic",
     "Upgrade-Insecure-Requests": "1",
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/51.0.2704.79 Chrome/51.0.2704.79 Safari/537.36",
 }
@@ -105,4 +99,4 @@ ITEM_PIPELINES = {
 DATABASE_PATH = 'downloads/data.db'
 IMAGES_STORE = 'downloads/image/'
 
-LOG_FILE = 'downloads/pic.log'
+LOG_FILE = 'downloads/' + strftime("%Y-%m-%d-%H-%M-%S", gmtime()) + '.log'

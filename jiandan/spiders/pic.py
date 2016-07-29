@@ -24,19 +24,22 @@ CREATE TABLE `viewed-pages` (
 )''')
         cursor.close()
         self.conn.commit()
-        if start is None:
-            self.start_urls = ['http://jandan.net/pic']
-        else:
-            self.start_urls = ['http://jandan.net/pic/page-' + start]
-        # self.start = start
+        self.start = start
         self.length = int(length) if length is not None else -1
 
-    # def start_requests(self):
-    #     if self.start is None:
-    #         return [scrapy.Request('http://jandan.net/pic', self.parse)]
-    #     else:
-    # return [scrapy.Request('http://jandan.net/pic/page-' + start,
-    # self.parse)]
+    def start_requests(self):
+        if self.start is None:
+            return [scrapy.Request('http://jandan.net/pic', self.parse,
+                                   headers={"Host": "jandan.net",
+                                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                                            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2", },
+                                   )]
+        else:
+            return [scrapy.Request('http://jandan.net/pic/page-' + start, self.parse,
+                                   headers={"Host": "jandan.net",
+                                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                                            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2", },
+                                   )]
 
     def parse(self, response):
         self.view_page(response.url)
@@ -80,9 +83,17 @@ CREATE TABLE `viewed-pages` (
         next_url = response.css(
             '.previous-comment-page').xpath('@href').extract()[0]
         if self.length > 0:
-            yield scrapy.Request(next_url, self.parse)
+            yield scrapy.Request(next_url, self.parse,
+                                 headers={"Host": "jandan.net",
+                                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                                          "Referer": response.url, }
+                                 )
         elif self.length < 0 and not self.has_crawled(next_url):
-            yield scrapy.Request(next_url, self.parse)
+            yield scrapy.Request(next_url, self.parse,
+                                 headers={"Host": "jandan.net",
+                                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                                          "Referer": response.url, }
+                                 )
 
     def has_crawled(self, page):
         match = re.match('http://jandan.net/pic/page-(\\d+)', page)
