@@ -63,6 +63,9 @@ CREATE TABLE `data` (
 
 class PicImagesPipeline(ImagesPipeline):
 
+    def file_path(self, request, response=None, info=None):
+        return path.split(request.url)[1]
+
     def get_media_requests(self, item, info):
         for i in item['content']:
             if isinstance(i, ImageItem):
