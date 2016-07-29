@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ -n "$1" ]; then
+    scrapy crawl pic -a start=$1
+else
+    scrapy crawl pic
+fi
