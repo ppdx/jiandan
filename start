@@ -1,7 +1,11 @@
 #!/bin/sh
 
 if [ -n "$1" ]; then
-    scrapy crawl pic -a start=$1
+    if [ -n "$2"];then
+        scrapy crawl pic -a start=$1 -a length=$2
+    else
+        scrapy crawl pic -a start=$1
+    fi
 else
     scrapy crawl pic
 fi
