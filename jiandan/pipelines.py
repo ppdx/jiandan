@@ -123,7 +123,7 @@ CREATE TABLE `data` (
             elif isinstance(i, BrItem):
                 last_node = etree.SubElement(root, 'br')
         item['content'] = etree.tostring(
-            root, encoding='utf-8', pretty_print=True)
+            root, encoding='unicode', pretty_print=True)
         cursor = self.conn.cursor()
         cursor.execute(
             'INSERT INTO `data`(`id`,`author`,`content`) VALUES (?,?,?)',
