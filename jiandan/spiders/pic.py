@@ -35,7 +35,7 @@ CREATE TABLE `viewed-pages` (
                                             "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2", },
                                    )]
         else:
-            return [scrapy.Request('http://jandan.net/pic/page-' + start, self.parse,
+            return [scrapy.Request('http://jandan.net/pic/page-' + self.start, self.parse,
                                    headers={"Host": "jandan.net",
                                             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
                                             "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2", },
