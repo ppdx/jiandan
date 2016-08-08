@@ -6,6 +6,14 @@ import jiandan
 from jiandan.items import *
 
 
+def is_number(s):
+    try:
+        int(s)
+        return True
+    except:
+        return False
+
+
 class PicSpider(scrapy.Spider):
     name = "pic"
     allowed_domains = ["jandan.net"]
@@ -24,8 +32,8 @@ CREATE TABLE `viewed-pages` (
 )''')
         cursor.close()
         self.conn.commit()
-        self.start = start
-        self.length = int(length) if length is not None else -1
+        self.start = start if is_number(start) and int(start) > 0 else None
+        self.length = int(length) if is_number(length) None else -1
 
     def start_requests(self):
         if self.start is None:
