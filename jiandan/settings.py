@@ -96,7 +96,7 @@ ITEM_PIPELINES = {
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-DATABASE_PATH = 'downloads/data.db'
+DATA_PATH = 'downloads/data/'
 IMAGES_STORE = 'downloads/image/'
-
-LOG_FILE = 'downloads/' + strftime("%Y-%m-%d-%H-%M-%S", gmtime()) + '.log'
+INDEX_FILE = 'downloads/data.json'
+LOG_FILE = 'downloads/log/' + strftime("%Y-%m-%d-%H-%M-%S", localtime()) + '.log'
