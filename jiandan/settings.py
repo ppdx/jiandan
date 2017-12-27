@@ -21,7 +21,7 @@ NEWSPIDER_MODULE = 'jiandan.spiders'
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/51.0.2704.79 Chrome/51.0.2704.79 Safari/537.36'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+#ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -99,4 +99,4 @@ ITEM_PIPELINES = {
 DATABASE_PATH = 'downloads/data.db'
 IMAGES_STORE = 'downloads/image/'
 
-LOG_FILE = 'downloads/' + strftime("%Y-%m-%d-%H-%M-%S", gmtime()) + '.log'
+#LOG_FILE = 'downloads/' + strftime("%Y-%m-%d-%H-%M-%S", gmtime()) + '.log'

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
 import sqlite3
+from urllib.parse import urljoin
+
 import scrapy
 import jiandan
 from jiandan.items import *
@@ -21,19 +23,8 @@ class PicSpider(scrapy.Spider):
     def __init__(self, start=None, length=None, *args, **kwargs):
         super(PicSpider, self).__init__(*args, **kwargs)
         self.conn = sqlite3.connect(jiandan.settings.DATABASE_PATH)
-        cursor = self.conn.cursor()
-        cursor.execute(
-            '''select count(*) from sqlite_master where type='table' and name='viewed-pages' ''')
-        if cursor.fetchone()[0] == 0:
-            cursor.execute('''
-CREATE TABLE `viewed-pages` (
-	`page`	INTEGER NOT NULL UNIQUE,
-	PRIMARY KEY(page)
-)''')
-        cursor.close()
-        self.conn.commit()
         self.start = start if is_number(start) and int(start) > 0 else None
-        self.length = int(length) if is_number(length) None else -1
+        self.length = int(length) if is_number(length) else -1
 
     def start_requests(self):
         if self.start is None:
@@ -70,8 +61,11 @@ CREATE TABLE `viewed-pages` (
                 elif tag == 'br':
                     item = BrItem()
                 elif tag == 'a':
-                    if node.text == '[查看原图]' and i + 2 < len(nodes) and nodes[i + 1].tag.lower() == 'br' and nodes[i + 2].tag.lower() == 'img':
-                        item = ImageItem(uri=node.attrib['href'],
+                    if node.text == '[查看原图]' and \
+                            i + 2 < len(nodes) and \
+                            nodes[i + 1].tag.lower() == 'br' and \
+                            nodes[i + 2].tag.lower() == 'img':
+                        item = ImageItem(uri=urljoin(response.url, node.attrib['href']),
                                          alt=nodes[i + 2].attrib.get('alt') or '')
                         i += 2
                     else:
@@ -79,7 +73,7 @@ CREATE TABLE `viewed-pages` (
                             url=node.attrib['href'], text=node.text)
                 elif tag == 'img':
                     item = ImageItem(
-                        uri=node.attrib['src'], alt=node.attrib.get('alt') or '')
+                        uri=urljoin(response.url, node.attrib['src']), alt=node.attrib.get('alt') or '')
                 else:
                     item = TextItem(text=node.text)
                 content.append(item)
@@ -90,6 +84,7 @@ CREATE TABLE `viewed-pages` (
 
         next_url = response.css(
             '.previous-comment-page').xpath('@href').extract()[0]
+        next_url = urljoin(response.url, next_url)
         if self.length > 0:
             yield scrapy.Request(next_url, self.parse,
                                  headers={"Host": "jandan.net",
