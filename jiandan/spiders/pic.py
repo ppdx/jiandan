@@ -4,6 +4,8 @@ import sqlite3
 from urllib.parse import urljoin
 
 import scrapy
+from scrapy.utils.project import get_project_settings
+
 import jiandan
 from jiandan.items import *
 
@@ -22,23 +24,18 @@ class PicSpider(scrapy.Spider):
 
     def __init__(self, start=None, length=None, *args, **kwargs):
         super(PicSpider, self).__init__(*args, **kwargs)
-        self.conn = sqlite3.connect(jiandan.settings.DATABASE_PATH)
+        self.conn = sqlite3.connect(get_project_settings().get("DATABASE_PATH", 'downloads/data.db'))
         self.start = start if is_number(start) and int(start) > 0 else None
         self.length = int(length) if is_number(length) else -1
 
     def start_requests(self):
         if self.start is None:
-            return [scrapy.Request('http://jandan.net/pic', self.parse,
-                                   headers={"Host": "jandan.net",
-                                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                                            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2", },
-                                   )]
+            url = 'http://jandan.net/pic'
         else:
-            return [scrapy.Request('http://jandan.net/pic/page-' + self.start, self.parse,
-                                   headers={"Host": "jandan.net",
-                                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                                            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4,zh-TW;q=0.2", },
-                                   )]
+            url = 'http://jandan.net/pic/page-' + str(self.start)
+        request = scrapy.Request(url, self.parse, headers={"Host": "jandan.net"})
+        request.meta['PhantomJS'] = True
+        yield request
 
     def parse(self, response):
         self.view_page(response.url)
@@ -86,42 +83,32 @@ class PicSpider(scrapy.Spider):
             '.previous-comment-page').xpath('@href').extract()[0]
         next_url = urljoin(response.url, next_url)
         if self.length > 0:
-            yield scrapy.Request(next_url, self.parse,
-                                 headers={"Host": "jandan.net",
-                                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                                          "Referer": response.url, }
-                                 )
+            request = scrapy.Request(next_url, self.parse,
+                                     headers={"Host": "jandan.net",
+                                              "Referer": response.url, }
+                                     )
         elif self.length < 0 and not self.has_crawled(next_url):
-            yield scrapy.Request(next_url, self.parse,
-                                 headers={"Host": "jandan.net",
-                                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                                          "Referer": response.url, }
-                                 )
+            request = scrapy.Request(next_url, self.parse,
+                                     headers={"Host": "jandan.net",
+                                              "Referer": response.url, }
+                                     )
+        else:
+            return
+        request.meta['PhantomJS'] = True
+        yield request
 
     def has_crawled(self, page):
         match = re.match('http://jandan.net/pic/page-(\\d+)', page)
         if not match:
             return False
         index = int(match.group(1))
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                '''SELECT * FROM `viewed-pages` WHERE `page` = ?''', (index,))
-            return cursor.fetchone() is not None
-        finally:
-            cursor.close()
+        cur = self.conn.execute('SELECT * FROM `viewed-pages` WHERE `page` = ?', (index,))
+        return cur.fetchone() is not None
 
     def view_page(self, page):
         match = re.match('http://jandan.net/pic/page-(\\d+)', page)
         if not match:
             return
         index = int(match.group(1))
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                'INSERT INTO `viewed-pages`(`page`) VALUES (?);', (index,))
-        except sqlite3.IntegrityError:
-            pass
-        finally:
-            cursor.close()
-            self.conn.commit()
+        self.conn.execute('INSERT INTO `viewed-pages`(`page`) VALUES (?);', (index,))
+        self.conn.commit()

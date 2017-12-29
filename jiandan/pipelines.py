@@ -4,6 +4,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+from scrapy.utils.project import get_project_settings
 
 import jiandan
 from jiandan.items import *
@@ -25,20 +26,7 @@ def tostring(x):
 class RemovePipeline:
 
     def open_spider(self, spider):
-        self.conn = sqlite3.connect(jiandan.settings.DATABASE_PATH)
-        cursor = self.conn.cursor()
-        cursor.execute(
-            '''select count(*) from sqlite_master where type='table' and name='data' ''')
-        if cursor.fetchone()[0] == 0:
-            cursor.execute('''
-CREATE TABLE `data` (
-    `id`    INTEGER NOT NULL UNIQUE,
-    `author`    TEXT NOT NULL,
-    `content`   TEXT NOT NULL,
-    PRIMARY KEY(id)
-)''')
-        cursor.close()
-        self.conn.commit()
+        self.conn = sqlite3.connect(get_project_settings().get("DATABASE_PATH", 'downloads/data.db'))
 
     def close_spider(self, spider):
         self.conn.close()
@@ -49,15 +37,12 @@ CREATE TABLE `data` (
         if item['id'] == '' or item['author'] == '':
             raise DropItem('id or author is empty!')
         try:
-            cursor = self.conn.cursor()
-            cursor.execute(
+            cursor = self.conn.execute(
                 'SELECT count(*) FROM `data` WHERE `id`=?', (int(item['id']),))
             if cursor.fetchone()[0] != 0:
                 raise DropItem('item already exist!')
         except ValueError:
             raise DropItem('id cannot convert to int!')
-        finally:
-            cursor.close()
         return item
 
 
@@ -84,20 +69,7 @@ class PicImagesPipeline(ImagesPipeline):
 class StorePipeline:
 
     def open_spider(self, spider):
-        self.conn = sqlite3.connect(jiandan.settings.DATABASE_PATH)
-        cursor = self.conn.cursor()
-        cursor.execute(
-            '''select count(*) from sqlite_master where type='table' and name='data' ''')
-        if cursor.fetchone()[0] == 0:
-            cursor.execute('''
-CREATE TABLE `data` (
-    `id`    INTEGER NOT NULL UNIQUE,
-    `author`    TEXT NOT NULL,
-    `content`   TEXT NOT NULL,
-    PRIMARY KEY(id)
-)''')
-        cursor.close()
-        self.conn.commit()
+        self.conn = sqlite3.connect(get_project_settings().get("DATABASE_PATH", 'downloads/data.db'))
 
     def close_spider(self, spider):
         self.conn.close()
@@ -126,11 +98,12 @@ CREATE TABLE `data` (
             elif isinstance(i, BrItem):
                 last_node = etree.SubElement(root, 'br')
         item['content'] = etree.tostring(
-            root, encoding='unicode', pretty_print=True)
-        cursor = self.conn.cursor()
-        cursor.execute(
+            root, encoding='unicode', pretty_print=True).replace(
+            '因不受欢迎已被超载鸡自动隐藏.  <a href="javascript:;">[手贱一回]</a>',
+            '')
+
+        self.conn.execute(
             'INSERT INTO `data`(`id`,`author`,`content`) VALUES (?,?,?)',
             (item['id'], item['author'], item['content']))
-        cursor.close()
         self.conn.commit()
         return item

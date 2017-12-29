@@ -8,13 +8,13 @@ import os
 if not os.path.exists("downloads"):
     os.mkdir("downloads")
 
-setting = get_project_settings()
+settings = get_project_settings()
 
-conn = sqlite3.connect(setting["DATABASE_PATH"])
+conn = sqlite3.connect(settings["DATABASE_PATH"])
 conn.executescript(open("create table.sql").read())
 conn.close()
 
-process = CrawlerProcess(setting)
+process = CrawlerProcess(settings)
 
 # 'followall' is the name of one of the spiders of the project.
 process.crawl('pic')
