@@ -97,6 +97,9 @@ ITEM_PIPELINES = {
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 DATABASE_PATH = 'downloads/data.db'
-IMAGES_STORE = 'downloads/image/'
+FILES_STORE = 'downloads/image/'
 
 #LOG_FILE = 'downloads/' + strftime("%Y-%m-%d-%H-%M-%S", gmtime()) + '.log'
+INCREASE_MODE = True
+
+LOG_LEVEL = 'INFO'

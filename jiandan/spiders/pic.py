@@ -24,7 +24,8 @@ class PicSpider(scrapy.Spider):
 
     def __init__(self, start=None, length=None, *args, **kwargs):
         super(PicSpider, self).__init__(*args, **kwargs)
-        self.conn = sqlite3.connect(get_project_settings().get("DATABASE_PATH", 'downloads/data.db'))
+        self.conn = sqlite3.connect(get_project_settings().get(
+            "DATABASE_PATH", 'downloads/data.db'))
         self.start = start if is_number(start) and int(start) > 0 else None
         self.length = int(length) if is_number(length) else -1
 
@@ -33,7 +34,8 @@ class PicSpider(scrapy.Spider):
             url = 'http://jandan.net/pic'
         else:
             url = 'http://jandan.net/pic/page-' + str(self.start)
-        request = scrapy.Request(url, self.parse, headers={"Host": "jandan.net"})
+        request = scrapy.Request(url, self.parse, headers={
+                                 "Host": "jandan.net"})
         request.meta['PhantomJS'] = True
         yield request
 
@@ -102,13 +104,22 @@ class PicSpider(scrapy.Spider):
         if not match:
             return False
         index = int(match.group(1))
-        cur = self.conn.execute('SELECT * FROM `viewed-pages` WHERE `page` = ?', (index,))
-        return cur.fetchone() is not None
+        cur = self.conn.execute(
+            'SELECT * FROM `viewed-pages` WHERE `page` = ?', (index,))
+        if get_project_settings().get("INCREASE_MODE", True):
+            return cur.fetchone() is not None
+        else:
+            return False
 
     def view_page(self, page):
         match = re.match('http://jandan.net/pic/page-(\\d+)', page)
         if not match:
             return
         index = int(match.group(1))
-        self.conn.execute('INSERT INTO `viewed-pages`(`page`) VALUES (?);', (index,))
+        cur = self.conn.execute(
+            'SELECT * FROM `viewed-pages` WHERE `page` = ?', (index,))
+        if cur.fetchone() is not None:
+            return # already crawled
+        self.conn.execute(
+            'INSERT INTO `viewed-pages`(`page`) VALUES (?);', (index,))
         self.conn.commit()

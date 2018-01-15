@@ -4,6 +4,14 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+
+from PIL import Image
+
 from scrapy.utils.project import get_project_settings
 
 import jiandan
@@ -11,7 +19,7 @@ from jiandan.items import *
 from lxml import etree
 from os import path
 from scrapy.exceptions import DropItem
-from scrapy.pipelines.images import ImagesPipeline
+from scrapy.pipelines.images import ImagesPipeline, FilesPipeline
 import scrapy
 import sqlite3
 
@@ -26,7 +34,8 @@ def tostring(x):
 class RemovePipeline:
 
     def open_spider(self, spider):
-        self.conn = sqlite3.connect(get_project_settings().get("DATABASE_PATH", 'downloads/data.db'))
+        self.conn = sqlite3.connect(get_project_settings().get(
+            "DATABASE_PATH", 'downloads/data.db'))
 
     def close_spider(self, spider):
         self.conn.close()
@@ -34,8 +43,8 @@ class RemovePipeline:
     def process_item(self, item, spider):
         item['id'] = tostring(item['id'])
         item['author'] = tostring(item['author'])
-        if item['id'] == '' or item['author'] == '':
-            raise DropItem('id or author is empty!')
+        if item['id'] == '':
+            raise DropItem('id is empty!')
         try:
             cursor = self.conn.execute(
                 'SELECT count(*) FROM `data` WHERE `id`=?', (int(item['id']),))
@@ -46,10 +55,10 @@ class RemovePipeline:
         return item
 
 
-class PicImagesPipeline(ImagesPipeline):
+class PicImagesPipeline(FilesPipeline):
 
-    def file_path(self, request, response=None, info=None):
-        return path.split(request.url)[1]
+    # def file_path(self, request, response=None, info=None):
+    #     return path.split(request.url)[1]
 
     def get_media_requests(self, item, info):
         for i in item['content']:
@@ -69,7 +78,8 @@ class PicImagesPipeline(ImagesPipeline):
 class StorePipeline:
 
     def open_spider(self, spider):
-        self.conn = sqlite3.connect(get_project_settings().get("DATABASE_PATH", 'downloads/data.db'))
+        self.conn = sqlite3.connect(get_project_settings().get(
+            "DATABASE_PATH", 'downloads/data.db'))
 
     def close_spider(self, spider):
         self.conn.close()
