@@ -22,6 +22,7 @@ from scrapy.exceptions import DropItem
 from scrapy.pipelines.images import ImagesPipeline, FilesPipeline
 import scrapy
 import sqlite3
+from .spiders.ooxx import OoxxSpider
 
 
 def tostring(x):
@@ -41,8 +42,12 @@ class RemovePipeline:
         self.conn.close()
 
     def process_item(self, item, spider):
+        if isinstance(spider, OoxxSpider):
+            return item
+
         item['id'] = tostring(item['id'])
         item['author'] = tostring(item['author'])
+
         if item['id'] == '':
             raise DropItem('id is empty!')
         try:
@@ -57,15 +62,32 @@ class RemovePipeline:
 
 class PicImagesPipeline(FilesPipeline):
 
-    # def file_path(self, request, response=None, info=None):
-    #     return path.split(request.url)[1]
+    def file_exists(self, request, info=None):
+        f = self.file_path(request, None, info)
+        return path.exists(f)
+
+    def file_path(self, request, response=None, info=None):
+        if isinstance(info.spider, OoxxSpider):
+            return "ooxx/" + path.split(request.url)[1]
+        return "full/" + path.split(request.url)[1]
 
     def get_media_requests(self, item, info):
+        if isinstance(item, ImageItem):
+            request = scrapy.Request(item['uri'])
+            if not self.file_exists(request, info):
+                yield request
+            return
+
         for i in item['content']:
             if isinstance(i, ImageItem):
-                yield scrapy.Request(i['uri'])
+                request = scrapy.Request(i['uri'])
+                if not self.file_exists(request, info):
+                    yield request
 
     def item_completed(self, results, item, info):
+        if isinstance(item, ImageItem):
+            return item
+
         d = {it['uri']: i for (i, it) in enumerate(item['content'])
              if isinstance(it, ImageItem)}
         for ok, x in results:
@@ -85,6 +107,8 @@ class StorePipeline:
         self.conn.close()
 
     def process_item(self, item, spider):
+        if isinstance(spider, OoxxSpider):
+            return item
         root = etree.Element('div')
         root.set('id', item['id'])
         root.set('author', item['author'])
